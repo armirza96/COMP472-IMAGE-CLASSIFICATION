@@ -50,60 +50,68 @@ class CNN(nn.Module):
         x = self.fc_layer(x)
         return x
 
-model = CNN()
-num_epochs = 4
-num_classes = 10
-learning_rate = 0.001
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+print("line 52")
+if __name__ == '__main__':
+	print("line 55")
+	model = CNN()
+	num_epochs = 4
+	num_classes = 10
+	learning_rate = 0.001
+	criterion = nn.CrossEntropyLoss()
+	optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 
-transform = transforms.Compose(
-		[transforms.ToTensor(),
-		transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-	)
+	transform = transforms.Compose(
+			[transforms.ToTensor(),
+			transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+		)
 
-trainset = torchvision.datasets.CIFAR10(
-		root='./data', train=True,
-		download=True, transform=transform
-	)
+	trainset = torchvision.datasets.CIFAR10(
+			root='./data', train=True,
+			download=True, transform=transform
+		)
 
-testset = torchvision.datasets.CIFAR10(
-		root='./data', train=False,
-		download=True, transform=transform
-	)
+	testset = torchvision.datasets.CIFAR10(
+			root='./data', train=False,
+			download=True, transform=transform
+		)
 
-m = len(trainset)
-train_data, val_data = random_split(trainset, [int(m - m * 0.2), int(m * 0.2)])
-DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+	m = len(trainset)
+	train_data, val_data = random_split(trainset, [int(m - m * 0.2), int(m * 0.2)])
+	DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-y_train = np.array([y for x, y in iter(train_data)])
+	print("Begin training")
 
-classes = ('plane', 'car', 'bird', 'cat',
-'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+	y_train = np.array([y for x, y in iter(train_data)])
 
-torch.manual_seed(0)
-net = NeuralNetClassifier(
-		CNN,
-		max_epochs=1,
-		iterator_train__num_workers=4,
-		iterator_valid__num_workers=4,
-		lr=1e-3,
-		batch_size=64,
-		optimizer=optim.Adam,
-		criterion=nn.CrossEntropyLoss,
-		device=DEVICE
-	)
+	classes = ('plane', 'car', 'bird', 'cat',
+	'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-net.fit(train_data, y=y_train)
-y_pred = net.predict(testset)
-y_test = np.array([y for x, y in iter(testset)])
-accuracy_score(y_test, y_pred)
-plot_confusion_matrix(net, testset, y_test.reshape(-1, 1))
-plt.show()
+	torch.manual_seed(0)
+	net = NeuralNetClassifier(
+			CNN,
+			max_epochs=1,
+			iterator_train__num_workers=4,
+			iterator_valid__num_workers=4,
+			lr=1e-3,
+			batch_size=64,
+			optimizer=optim.Adam,
+			criterion=nn.CrossEntropyLoss,
+			device=DEVICE
+		)
 
-net.fit(train_data, y=y_train)
-train_sliceable = SliceDataset(train_data)
-scores = cross_val_score(net, train_sliceable, y_train, cv=5,
-scoring="accuracy")
+	net.fit(train_data, y=y_train)
 
+	print("Done fitting data")
+
+
+	y_pred = net.predict(testset)
+	y_test = np.array([y for x, y in iter(testset)])
+	accuracy_score(y_test, y_pred)
+	plot_confusion_matrix(net, testset, y_test.reshape(-1, 1))
+	plt.show()
+
+	net.fit(train_data, y=y_train)
+	train_sliceable = SliceDataset(train_data)
+	scores = cross_val_score(net, train_sliceable, y_train, cv=5,
+	scoring="accuracy")
