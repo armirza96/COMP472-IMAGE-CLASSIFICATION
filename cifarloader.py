@@ -1,25 +1,109 @@
+
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils.data as td
+import torch.optim as optim
+import torchvision.datasets
+import torchvision.transforms as transforms
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import plot_confusion_matrix
+from skorch import NeuralNetClassifier
+from torch.utils.data import random_split
 
-def cifar_loader(batch_size, shuffle_test=False):
-	normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.225, 0.225, 0.225])
-	train = datasets.CIFAR10('./data', train=True, download=True, transform=transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomCrop(32, 4), transforms.ToTensor(),normalize]))
-	test = datasets.CIFAR10('./data', train=False, transform=transforms.Compose([transforms.ToTensor(), normalize]))
-	train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=True, pin_memory=True)
-	test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=shuffle_test, pin_memory=True)
-	return train_loader, test_loader
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        self.conv_layer = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+        self.fc_layer = nn.Sequential(
+            nn.Dropout(p=0.1),
+            nn.Linear(8 * 8 * 64, 1000),
+            nn.ReLU(inplace=True),
+            nn.Linear(1000, 512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.1),
+            nn.Linear(512, 10)
+        )
 
-batch_size = 64
-test_batch_size = 64
-input_size = 3072
-N = batch_size
-D_in = input_size
-H = 50
-D_out = 10
-num_epochs = 10
-train_loader, _ = cifar_loader(batch_size)
-_, test_loader = cifar_loader(test_batch_size)
+    def forward(self, x):
+        # conv layers
+        x = self.conv_layer(x)
+        # flatten
+        x = x.view(x.size(0), -1)
+        # fc layer
+        x = self.fc_layer(x)
+        return x
+
+model = CNN()
+num_epochs = 4
+num_classes = 10
+learning_rate = 0.001
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+
+transform = transforms.Compose(
+		[transforms.ToTensor(),
+		transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+	)
+
+trainset = torchvision.datasets.CIFAR10(
+		root='./data', train=True,
+		download=True, transform=transform
+	)
+
+testset = torchvision.datasets.CIFAR10(
+		root='./data', train=False,
+		download=True, transform=transform
+	)
+
+m = len(trainset)
+train_data, val_data = random_split(trainset, [int(m - m * 0.2), int(m * 0.2)])
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+y_train = np.array([y for x, y in iter(train_data)])
+
+classes = ('plane', 'car', 'bird', 'cat',
+'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+torch.manual_seed(0)
+net = NeuralNetClassifier(
+		CNN,
+		max_epochs=1,
+		iterator_train__num_workers=4,
+		iterator_valid__num_workers=4,
+		lr=1e-3,
+		batch_size=64,
+		optimizer=optim.Adam,
+		criterion=nn.CrossEntropyLoss,
+		device=DEVICE
+	)
+
+net.fit(train_data, y=y_train)
+y_pred = net.predict(testset)
+y_test = np.array([y for x, y in iter(testset)])
+accuracy_score(y_test, y_pred)
+plot_confusion_matrix(net, testset, y_test.reshape(-1, 1))
+plt.show()
+
+net.fit(train_data, y=y_train)
+train_sliceable = SliceDataset(train_data)
+scores = cross_val_score(net, train_sliceable, y_train, cv=5,
+scoring="accuracy")
+
