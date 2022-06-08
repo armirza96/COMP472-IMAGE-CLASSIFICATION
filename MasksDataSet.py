@@ -1,55 +1,37 @@
 import os
-import torch from torch.utils.data 
-import Dataset from skimage 
-import io
+import torch
+from torch.utils.data import Dataset
+from skimage import io
 import random
 
 class MasksDataSet(Dataset):
-   def init (self, root, transform=None, begin, end): 
-    self.root = root
+   def __init__(self, dirs, transform=None): 
     self.transform = transform
-    self.files = []
-    folders = os.walk(self.root) #listdir
-    for subDir in folders:
-        name = subDir.split(os.path.sep)[-1]
-        label = 0
+    self.items = []
+    for dir in dirs:
+        name = dir[0]
+        label = dir[1]
+        print("Name of folder", dir)
+        files = os.listdir(name)
 
-        if dir == 'Train_NoMask'
-            label = 0
-        elif dir == 'Train_SurgicalMask'
-            label = 1
-        elif dir == 'Train_ClothMask'
-            label = 2
-         elif dir = 'Train_N95Mask'
-            label = 3
+        for f in files:
+            #print(f)
+            # append tuple of (path, label)
+            self.items.append((dir[0] + '/' + f, label))
 
-        arr = [begin:end]os.listdir(name) # access array from begin to end to divide data
-        for item in arr:
-            files.append((item, label))
+    random.shuffle(self.items)
+    print("Items lnegth", len(self.items))
 
-        #files = files +  # i think this will over write we need to append the array every time 
-    random.shuffle(files)
+   def __len__(self):
+        return len(self.items)
 
-   def len (self):
-        return len(noMask) + len(surgicalMask) + len(n95Mask) + len(clothMask)
+   def __getitem__ (self, index):
+        label = self.items[index][1]
+        path = self.items[index][0] #os.path.join(dir, self.items[index][0])
+        image = io.imread(path)
+        label = torch.tensor(label)
 
-   def __getitem (self, index):
-        dir = ''
-        label = files[index][1]
-        if index < 299
-            dir = 'Train_NoMask'
-        elif index > 299 and index < 599
-            dir = 'Train_SurgicalMask'
-        elif index > 599 and index < 899
-            dir = 'Train_ClothMask'
-         elif index > 899 and index < 1199
-            dir = 'Train_N95Mask'
+        if self.transform:
+            image = self.transform(image)
 
-       path = os.path.join(self.root + '/' + dir, files[index][0])
-       image = io.imread(path)
-       label = torch.tensor(label)
-
-       if self.transform:
-           image = self.transform(image)
-
-    return image, label
+        return image, label

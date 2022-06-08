@@ -8,8 +8,8 @@ import torchvision.transforms as transforms
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import plot_confusion_matrix
 from skorch import NeuralNetClassifier
-from torch.utils.data import random_split
-from dataSet import MasksDataSet
+from torch.utils.data import DataLoader
+from MasksDataSet import MasksDataSet
 
 class CNN(nn.Module):
     def __init__(self):
@@ -32,12 +32,12 @@ class CNN(nn.Module):
         )
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(8 * 8 * 64, 1000),
+            nn.Linear(512, 512),
             nn.ReLU(inplace=True),
-            nn.Linear(1000, 512),
+            nn.Linear(512, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.1),
-            nn.Linear(512, 10)
+            nn.Linear(512, 512)
         )
 
     def forward(self, x):
@@ -56,27 +56,47 @@ num_classes = 4
 learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-batch_siuze = 32
+batch_size = 32
 
 transform = transforms.Compose(
 		[transforms.ToTensor(),
+		 transforms.Resize((512,512)),
 		transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 	)
+root = 'dataset'
+# tuple of (path, label)
+dirsTraining = [
+			(root + '/' + 'Train_NoMask',0), 
+			(root + '/' + 'Train_SurgicalMask', 1),
+			(root + '/' + 'Train_ClothMask', 2),
+			(root + '/' + 'Train_N95Mask', 3)
+		]
+datasetTraining = MasksDataSet(dirsTraining, transform = transform)
 
-datasetTraining = MasksDataSet( root = 'dataset', transform = transforms.ToTensor(), 0, 299)
-datasetTest = MasksDataSet(root = 'dataset', transform = transforms.ToTensor(), 300, 399)
+# tuple of (path, label)
+dirsTesting = [
+			(root + '/' + 'Test_NoMask',0), 
+			(root + '/' + 'Test_SurgicalMask', 1),
+			(root + '/' + 'Test_ClothMask', 2),
+			(root + '/' + 'Test_N95Mask', 3)
+		]
+datasetTest = MasksDataSet( dirsTesting, transform = transform)
 #train_data, val_data = random_split(dataset, [1200, 400])
 
-dataLoaderTrain = DataLoader(dataset=datasetTraining, batch_size =batch_size, shuffle=True)
-dataLoaderTest = DataLoader(dataset=datasetTest, batch_size =batch_size, shuffle=True)
+def collate_fn(batch):
+   batch = list(filter(lambda x: x is not None, batch))
+   return torch.utils.data.dataloader.default_collate(batch) 
+
+dataLoaderTrain = DataLoader(dataset=datasetTraining, batch_size =batch_size, shuffle=True, collate_fn=collate_fn)
+dataLoaderTest = DataLoader(dataset=datasetTest, batch_size =batch_size, shuffle=True, collate_fn=collate_fn)
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 print("Begin training", DEVICE)
 
-y_train = np.array([y for x, y in iter(train_data)])
+#y_train = np.array([y for x, y in iter(train_data)])
 
-classes = ('no mask', 'cloth mask', 'regular mask', 'n95')
+classes = ('no mask', 'surgical mask', 'cloth mask',  'n95')
 
 torch.manual_seed(0)
 # net = NeuralNetClassifier(
@@ -112,12 +132,12 @@ torch.manual_seed(0)
 # scoring="accuracy")
 
 # print("program done")
-for epoch in range(num epochs):
+for epoch in range(num_epochs):
    losses = []
 
    for batch_idx, (data, targets) in enumerate(dataLoaderTrain):
-     data • data.to(device=device)
-     targets = targets.to(device=device)
+     data = data.to(device=DEVICE)
+     targets = targets.to(device=DEVICE)
 
      scores = model(data)
      loss = criterion(scores, targets) 
@@ -132,23 +152,25 @@ for epoch in range(num epochs):
 
 # Check accuracy on training to see how good our model is
 def check_accuracy(loader, model):
-	num correct = 0
-	num_ samples = 0
+	num_correct = 0
+	num_samples = 0
 	model.evalO
-	with torch.no grad():
+	with torch.no_grad():
 		for x, y in loader:
-			x = x.to (device=device)
+			x = x.to(device=device)
 			y = y.to(device=device)
-			scores = model (x)
+			scores = model(x)
 			_, predictions = scores.max(1)
-			num_correct += (predictions == y). sum()
+			num_correct += (predictions == y).sum()
 			num_samples += predictions.size(e)
 		# print(f'Got {num_correct} / {num_samples} with accuracy {float (num_correct)/float(num_samples)*1})
 	model.train()
 
-print ("Checking accuracy on Training Set")
+
+
+print ('Checking accuracy on Training Set')
 check_accuracy(train_loader, model)
 
-print ("Checking accuracy on Test Set'
+print ('Checking accuracy on Test Set')
 check_accuracy(test_loader, model)
 
