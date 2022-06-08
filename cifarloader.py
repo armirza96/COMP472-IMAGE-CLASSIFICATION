@@ -129,3 +129,26 @@ for epoch in range(num epochs):
 
      optimizer.step()
 
+
+# Check accuracy on training to see how good our model is
+def check_accuracy(loader, model):
+	num correct = 0
+	num_ samples = 0
+	model.evalO
+	with torch.no grad():
+		for x, y in loader:
+			x = x.to (device=device)
+			y = y.to(device=device)
+			scores = model (x)
+			_, predictions = scores.max(1)
+			num_correct += (predictions == y). sum()
+			num_samples += predictions.size(e)
+		# print(f'Got {num_correct} / {num_samples} with accuracy {float (num_correct)/float(num_samples)*1})
+	model.train()
+
+print ("Checking accuracy on Training Set")
+check_accuracy(train_loader, model)
+
+print ("Checking accuracy on Test Set'
+check_accuracy(test_loader, model)
+
