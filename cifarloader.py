@@ -55,7 +55,7 @@ class CNN(nn.Module):
 
 
 model = CNN()
-num_epochs = 10
+# num_epochs = 10
 num_classes = 4
 learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
@@ -110,7 +110,7 @@ net = NeuralNetClassifier(
 		iterator_train__num_workers=0,
 		iterator_valid__num_workers=0,
 		lr=1e-3,
-		batch_size= batch_size,#64,
+		batch_size= batch_size,#8,
 		optimizer=optim.Adam,
 		criterion=nn.CrossEntropyLoss,
 		device=DEVICE
@@ -123,9 +123,6 @@ print("Done fitting data")
 
 y_pred = net.predict(datasetTest)
 y_test = np.array([y for x, y in iter(datasetTest)])
-# accuracy_score(y_test, y_pred)
-# print("Y-Test:",y_test)
-# print("Y-Predict:",y_pred)
 plot_confusion_matrix(net, datasetTest, y_test.reshape(-1, 1))
 
 print("Accuracy:    ", accuracy_score(y_test, y_pred)*100)
@@ -133,77 +130,6 @@ print("Recall:      ", recall_score(y_true=y_test, y_pred=y_pred, average='weigh
 print("Precision:   ", precision_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
 print("F1_Score:    ", f1_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
 
-
+torch.save(model.state_dict(), "C:/Users/lemai/comp472")
 print("program done")
 plt.show()
-
-
-
-
-
-
-
-
-# predicted_classes = torch.argmax(y_pred, dim=1) == 0
-# target_classes = self.get_vector(y_test)
-# target_true = 0
-# predicted_true = 0
-# correct_true = 0
-# target_true += torch.sum(target_classes == 0).float()
-# predicted_true += torch.sum(predicted_classes).float()
-# correct_true += torch.sum(predicted_classes == target_classes * predicted_classes == 0).float()
-
-# recall = correct_true / target_true
-# precision = correct_true / predicted_true
-# f1_score = 2 * precision * recall / (precision + recall)
-# print("Recall:", recall)
-# print("Precision:", precision)
-# print("f1_score:", f1_score)
-# torch.save(model.state_dict(), "dataset")
-# print("115")
-
-# net.fit(datasetTraining, y=y_train)
-# train_sliceable = SliceDataset(datasetTraining)
-# scores = cross_val_score(net, train_sliceable, y_train, cv=5,
-# scoring="accuracy")
-# for epoch in range(num_epochs):
-#    losses = []
-
-#    for batch_idx, (data, targets) in enumerate(dataLoaderTrain):
-#      data = data.to(device=DEVICE)
-#      targets = targets.to(device=DEVICE)
-
-#      scores = model(data)
-#      loss = criterion(scores, targets) 
-
-#      losses.append(loss.item())
-
-#      optimizer.zero_grad()
-#      loss.backward()
-
-#      optimizer.step()
-
-
-# # Check accuracy on training to see how good our model is
-# def check_accuracy(loader, model):
-# 	num_correct = 0
-# 	num_samples = 0
-# 	model.evalO
-# 	with torch.no_grad():
-# 		for x, y in loader:
-# 			x = x.to(device=device)
-# 			y = y.to(device=device)
-# 			scores = model(x)
-# 			_, predictions = scores.max(1)
-# 			num_correct += (predictions == y).sum()
-# 			num_samples += predictions.size(e)
-# 		# print(f'Got {num_correct} / {num_samples} with accuracy {float (num_correct)/float(num_samples)*1})
-# 	model.train()
-
-
-
-# print ('Checking accuracy on Training Set')
-# check_accuracy(train_loader, model)
-
-# print ('Checking accuracy on Test Set')
-# check_accuracy(test_loader, model)
