@@ -130,6 +130,6 @@ print("Recall:      ", recall_score(y_true=y_test, y_pred=y_pred, average='weigh
 print("Precision:   ", precision_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
 print("F1_Score:    ", f1_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
 
-torch.save(model.state_dict(), "C:/Users/lemai/comp472/model.pt")
+torch.save(model.state_dict(), "model.pt")
 print("program done")
 plt.show()
