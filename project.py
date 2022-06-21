@@ -12,6 +12,9 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+from sklearn.model_selection import train_test_split
+import os
+import random
 
 from MasksDataSet import MasksDataSet
 
@@ -41,7 +44,7 @@ class CNN(nn.Module):
             nn.Linear(1000, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.1),
-            nn.Linear(512, 10)
+            nn.Linear(512, 4)
         )
 
     def forward(self, x):
@@ -55,7 +58,7 @@ class CNN(nn.Module):
 
 
 model = CNN()
-# num_epochs = 10
+
 num_classes = 4
 learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
@@ -67,25 +70,93 @@ transform = transforms.Compose(
 		 transforms.Resize((64, 64)),
 		transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 	)
-	
-root = 'dataset'
-# tuple of (path, label)
-dirsTraining = [
-			(root + '/' + 'Train_NoMask',0), 
-			(root + '/' + 'Train_SurgicalMask', 1),
-			(root + '/' + 'Train_ClothMask', 2),
-			(root + '/' + 'Train_N95Mask', 3)
-		]
-datasetTraining = MasksDataSet(dirsTraining, transform = transform)
 
+
+root = 'dataset2'
 # tuple of (path, label)
-dirsTesting = [
-			(root + '/' + 'Test_NoMask',0), 
-			(root + '/' + 'Test_SurgicalMask', 1),
-			(root + '/' + 'Test_ClothMask', 2),
-			(root + '/' + 'Test_N95Mask', 3)
-		]
-datasetTest = MasksDataSet( dirsTesting, transform = transform)
+dirs = [(root + '/' + 'nomask',0), (root + '/' + 'surgicalmask',1), (root + '/' + 'clothmask',2), (root + '/' + 'n95',3)]
+
+# this array will arrays of all of the images
+# each index corresponds to an image type
+# 0 = no mask, 1 = surgical mask, 2 = clothmask, 3 = n95
+items = [[],[],[],[]]
+# dirssurgicalmask = [(root + '/' + 'surgicalmask',1)]
+# dirsclothmask = [(root + '/' + 'clothmask',2)]
+# dirsn95 = [(root + '/' + 'n95',3)]
+
+for dir in dirs:
+    name = dir[0]
+    label = dir[1]
+    print("Name of folder", dir)
+    files = os.listdir(name)
+
+    images = []
+    for f in files:
+        #print(f)
+        # append tuple of (path, label)
+        images.append((dir[0] + '/' + f, label))
+
+    # we shuffle the array everytime so that even thorugh were reading the same images in the same order every time
+    # we get a new order of images to split the array on
+    random.shuffle(images)
+
+    # afterwards we can append this image a
+    items[label] = images
+
+print("No mask",items[0][34])
+print("Surgical mask",items[1][209])
+print("Cloth",items[2][55])
+print("N95",items[3][106])
+
+
+
+train_NoMask = items[0][0:299]
+test_NoMask = items[0][299:399]
+
+train_SurgicalMask = items[1][0:299]
+test_SurgicalMask = items[1][299:399] 
+
+train_ClothMask = items[2][0:299]
+test_ClothMask = items[2][299:399]
+
+train_N95 = items[3][0:299]
+test_N95 = items[3][299:399]
+
+training = train_NoMask + train_SurgicalMask + train_ClothMask + train_N95
+testing = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
+#print("Training", training)
+print("testing", testing)
+
+
+datasetTraining = MasksDataSet(training, transform = transform)
+datasetTest = MasksDataSet(testing, transform = transform)
+
+# dirssurgicalmask = MasksDataSet(dirssurgicalmask, transform = transform)
+# dirsclothmask = MasksDataSet(dirsclothmask, transform = transform)
+# dirsn95 = MasksDataSet(dirsn95, transform = transform)
+
+
+# datasetTraining = train_NoMask +train_SurgicalMask + train_ClothMask + train_N95
+# datasetTest = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
+
+# root = 'dataset'
+# # tuple of (path, label)
+# dirsTraining = [
+# 			(root + '/' + 'Train_NoMask',0), 
+# 			(root + '/' + 'Train_SurgicalMask', 1),
+# 			(root + '/' + 'Train_ClothMask', 2),
+# 			(root + '/' + 'Train_N95Mask', 3)
+# 		]
+# datasetTraining = MasksDataSet(dirsTraining, transform = transform)
+
+# # tuple of (path, label)
+# dirsTesting = [
+# 			(root + '/' + 'Test_NoMask',0), 
+# 			(root + '/' + 'Test_SurgicalMask', 1),
+# 			(root + '/' + 'Test_ClothMask', 2),
+# 			(root + '/' + 'Test_N95Mask', 3)
+# 		]
+# datasetTest = MasksDataSet( dirsTesting, transform = transform)
 #train_data, val_data = random_split(dataset, [1200, 400])
 
 def collate_fn(batch):
@@ -101,6 +172,7 @@ print("Begin training", DEVICE)
 
 y_train = np.array([y for x, y in iter(datasetTraining)])
 
+
 classes = ('no mask', 'surgical mask', 'cloth mask',  'n95')
 
 torch.manual_seed(0)
@@ -115,6 +187,8 @@ net = NeuralNetClassifier(
 		criterion=nn.CrossEntropyLoss,
 		device=DEVICE
 	)
+
+#print(datasetTraining[0])
 
 net.fit(datasetTraining, y=y_train)
 
