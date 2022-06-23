@@ -59,66 +59,6 @@ class CNN(nn.Module):
         x = self.fc_layer(x)
         return x
 
-# if os.path.isfile("model.pt"):
-#     model = CNN()
-#     model.load_state_dict(torch.load("model.pt"))
-#     model.eval()
-
-#     root = 'dataset2'
-#     # tuple of (path, label)
-#     dirsRace = [(root + '/race/' + 'nomask',0), (root + '/race/' + 'surgicalmask',1), (root + '/race/' + 'clothmask',2), (root + '/race/' + 'n95',3)]
-#     dirsAge = [(root + '/gender/' + 'nomask',0), (root + '/gender/' + 'surgicalmask',1), (root + '/gender/' + 'clothmask',2), (root + '/gender/' + 'n95',3)]
-
-#     biases = [dirsRace, dirsAge]
-
-#     for bias in biases:
-#         #items = [[],[],[],[]]
-
-#         for dir in bias:
-#             name = dir[0]
-#             label = dir[1]
-#             print("Name of folder", dir)
-#             files = os.listdir(name)
-
-#             images = []
-#             for f in files:
-#                 #print(f)
-#                 # append tuple of (path, label)
-#                 images.append((dir[0] + '/' + f, label))
-
-#             # we shuffle the array everytime so that even thorugh were reading the same images in the same order every time
-#             # we get a new order of images to split the array on
-#             random.shuffle(images)
-
-#             # afterwards we can append this image a
-#             #items[label] = images
-#         with torch.no_grad():
-#                 # Generate prediction
-#             #prediction = model(images)
-    
-#             #  Predicted class value using argmax
-#             #predicted_class = np.argmax(prediction)
-#                 # Retrieve item
-#             index = 256
-#             item = dataset[index]
-#             image = item[0]
-#             true_target = item[1]
-            
-#             # Generate prediction
-#             prediction = mlp(image)
-            
-#             # Predicted class value using argmax
-#             predicted_class = np.argmax(prediction)
-            
-#             # Reshape image
-#             image = image.reshape(28, 28, 1)
-            
-#             # Show result
-#             plt.imshow(image, cmap='gray')
-#             plt.title(f'Prediction: {predicted_class} - Actual target: {true_target}')
-#             plt.show()
-
-# else:
 model = CNN()
 
 num_classes = 4

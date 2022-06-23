@@ -1,6 +1,6 @@
 
 # 1) Change name to model that you wish to evaluate, and ensure it is in same directory
-model_name = "model.pt"#"model_phase2.pt"
+model_name = "model_phase2.pt" #"model.pt"
 
 import matplotlib.pyplot as plt
 import numpy as np
