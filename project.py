@@ -13,10 +13,16 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from skorch.helper import SliceDataset
+from sklearn.metrics import make_scorer, f1_score
+from sklearn.model_selection import cross_validate
+
 import os
 import random
 
 from MasksDataSet import MasksDataSet
+# from SliceDataset import SliceDataset
 
 class CNN(nn.Module):
     def __init__(self):
@@ -63,7 +69,7 @@ num_classes = 4
 learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-batch_size = 8
+batch_size = 64
 
 transform = transforms.Compose(
 		[transforms.ToTensor(),
@@ -131,33 +137,7 @@ print("testing", testing)
 datasetTraining = MasksDataSet(training, transform = transform)
 datasetTest = MasksDataSet(testing, transform = transform)
 
-# dirssurgicalmask = MasksDataSet(dirssurgicalmask, transform = transform)
-# dirsclothmask = MasksDataSet(dirsclothmask, transform = transform)
-# dirsn95 = MasksDataSet(dirsn95, transform = transform)
 
-
-# datasetTraining = train_NoMask +train_SurgicalMask + train_ClothMask + train_N95
-# datasetTest = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
-
-# root = 'dataset'
-# # tuple of (path, label)
-# dirsTraining = [
-# 			(root + '/' + 'Train_NoMask',0), 
-# 			(root + '/' + 'Train_SurgicalMask', 1),
-# 			(root + '/' + 'Train_ClothMask', 2),
-# 			(root + '/' + 'Train_N95Mask', 3)
-# 		]
-# datasetTraining = MasksDataSet(dirsTraining, transform = transform)
-
-# # tuple of (path, label)
-# dirsTesting = [
-# 			(root + '/' + 'Test_NoMask',0), 
-# 			(root + '/' + 'Test_SurgicalMask', 1),
-# 			(root + '/' + 'Test_ClothMask', 2),
-# 			(root + '/' + 'Test_N95Mask', 3)
-# 		]
-# datasetTest = MasksDataSet( dirsTesting, transform = transform)
-#train_data, val_data = random_split(dataset, [1200, 400])
 
 def collate_fn(batch):
    batch = list(filter(lambda x: x is not None, batch))
@@ -199,11 +179,102 @@ y_pred = net.predict(datasetTest)
 y_test = np.array([y for x, y in iter(datasetTest)])
 plot_confusion_matrix(net, datasetTest, y_test.reshape(-1, 1))
 
-print("Accuracy:    ", accuracy_score(y_test, y_pred)*100)
-print("Recall:      ", recall_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
-print("Precision:   ", precision_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
-print("F1_Score:    ", f1_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
+# print("Accuracy:    ", accuracy_score(y_test, y_pred)*100)
+# print("Recall:      ", recall_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
+# print("Precision:   ", precision_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
+# print("F1_Score:    ", f1_score(y_true=y_test, y_pred=y_pred, average='weighted')*100)
 
-torch.save(model.state_dict(), "model.pt")
-print("program done")
-plt.show()
+torch.save(model.state_dict(), "Model_Phase2.pt")
+# print("program done")
+# plt.show()
+
+train_sliceable = SliceDataset(datasetTraining)
+accuracy = cross_val_score(net, train_sliceable, y_train, cv=10, scoring="accuracy")
+print("Accuracy score across 10 folds: ", accuracy)
+print("Accuracy mean: ",np.mean(accuracy))
+
+
+recall = cross_val_score(net, train_sliceable, y_train, cv=10, scoring="recall_macro")
+print("Recall score across 10 folds: ", recall)
+print('Recall: ',  np.mean(recall))
+
+precision = cross_val_score(net, train_sliceable, y_train, cv=10, scoring="precision_macro")
+print("Precision score across 10 folds: ", precision)
+print('precision: ', np.mean(precision))
+
+f1 = cross_val_score(net, train_sliceable, y_train, cv=10, scoring="f1_macro")
+print("F1 score across 10 folds: ", f1)
+print('f1: ', np.mean(f1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# dirssurgicalmask = MasksDataSet(dirssurgicalmask, transform = transform)
+# dirsclothmask = MasksDataSet(dirsclothmask, transform = transform)
+# dirsn95 = MasksDataSet(dirsn95, transform = transform)
+
+
+# datasetTraining = train_NoMask +train_SurgicalMask + train_ClothMask + train_N95
+# datasetTest = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
+
+# root = 'dataset'
+# # tuple of (path, label)
+# dirsTraining = [
+# 			(root + '/' + 'Train_NoMask',0), 
+# 			(root + '/' + 'Train_SurgicalMask', 1),
+# 			(root + '/' + 'Train_ClothMask', 2),
+# 			(root + '/' + 'Train_N95Mask', 3)
+# 		]
+# datasetTraining = MasksDataSet(dirsTraining, transform = transform)
+
+# # tuple of (path, label)
+# dirsTesting = [
+# 			(root + '/' + 'Test_NoMask',0), 
+# 			(root + '/' + 'Test_SurgicalMask', 1),
+# 			(root + '/' + 'Test_ClothMask', 2),
+# 			(root + '/' + 'Test_N95Mask', 3)
+# 		]
+# datasetTest = MasksDataSet( dirsTesting, transform = transform)
+#train_data, val_data = random_split(dataset, [1200, 400])
