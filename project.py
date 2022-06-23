@@ -13,10 +13,13 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from skorch.helper import SliceDataset
 import os
 import random
 
 from MasksDataSet import MasksDataSet
+# from SliceDataset import SliceDataset
 
 class CNN(nn.Module):
     def __init__(self):
@@ -56,23 +59,82 @@ class CNN(nn.Module):
         x = self.fc_layer(x)
         return x
 
+# if os.path.isfile("model.pt"):
+#     model = CNN()
+#     model.load_state_dict(torch.load("model.pt"))
+#     model.eval()
 
+#     root = 'dataset2'
+#     # tuple of (path, label)
+#     dirsRace = [(root + '/race/' + 'nomask',0), (root + '/race/' + 'surgicalmask',1), (root + '/race/' + 'clothmask',2), (root + '/race/' + 'n95',3)]
+#     dirsAge = [(root + '/gender/' + 'nomask',0), (root + '/gender/' + 'surgicalmask',1), (root + '/gender/' + 'clothmask',2), (root + '/gender/' + 'n95',3)]
+
+#     biases = [dirsRace, dirsAge]
+
+#     for bias in biases:
+#         #items = [[],[],[],[]]
+
+#         for dir in bias:
+#             name = dir[0]
+#             label = dir[1]
+#             print("Name of folder", dir)
+#             files = os.listdir(name)
+
+#             images = []
+#             for f in files:
+#                 #print(f)
+#                 # append tuple of (path, label)
+#                 images.append((dir[0] + '/' + f, label))
+
+#             # we shuffle the array everytime so that even thorugh were reading the same images in the same order every time
+#             # we get a new order of images to split the array on
+#             random.shuffle(images)
+
+#             # afterwards we can append this image a
+#             #items[label] = images
+#         with torch.no_grad():
+#                 # Generate prediction
+#             #prediction = model(images)
+    
+#             #  Predicted class value using argmax
+#             #predicted_class = np.argmax(prediction)
+#                 # Retrieve item
+#             index = 256
+#             item = dataset[index]
+#             image = item[0]
+#             true_target = item[1]
+            
+#             # Generate prediction
+#             prediction = mlp(image)
+            
+#             # Predicted class value using argmax
+#             predicted_class = np.argmax(prediction)
+            
+#             # Reshape image
+#             image = image.reshape(28, 28, 1)
+            
+#             # Show result
+#             plt.imshow(image, cmap='gray')
+#             plt.title(f'Prediction: {predicted_class} - Actual target: {true_target}')
+#             plt.show()
+
+# else:
 model = CNN()
 
 num_classes = 4
 learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-batch_size = 8
+batch_size = 64
 
 transform = transforms.Compose(
-		[transforms.ToTensor(),
-		 transforms.Resize((64, 64)),
-		transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-	)
+        [transforms.ToTensor(),
+        transforms.Resize((64, 64)),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    )
 
 
-root = 'dataset2'
+root = 'Dataset_General'
 # tuple of (path, label)
 dirs = [(root + '/' + 'nomask',0), (root + '/' + 'surgicalmask',1), (root + '/' + 'clothmask',2), (root + '/' + 'n95',3)]
 
@@ -103,12 +165,10 @@ for dir in dirs:
     # afterwards we can append this image a
     items[label] = images
 
-print("No mask",items[0][34])
-print("Surgical mask",items[1][209])
-print("Cloth",items[2][55])
-print("N95",items[3][106])
-
-
+# print("No mask",items[0][34])
+# print("Surgical mask",items[1][209])
+# print("Cloth",items[2][55])
+# print("N95",items[3][106])
 
 train_NoMask = items[0][0:299]
 test_NoMask = items[0][299:399]
@@ -125,46 +185,11 @@ test_N95 = items[3][299:399]
 training = train_NoMask + train_SurgicalMask + train_ClothMask + train_N95
 testing = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
 #print("Training", training)
-print("testing", testing)
+#print("testing", testing)
 
 
 datasetTraining = MasksDataSet(training, transform = transform)
-datasetTest = MasksDataSet(testing, transform = transform)
-
-# dirssurgicalmask = MasksDataSet(dirssurgicalmask, transform = transform)
-# dirsclothmask = MasksDataSet(dirsclothmask, transform = transform)
-# dirsn95 = MasksDataSet(dirsn95, transform = transform)
-
-
-# datasetTraining = train_NoMask +train_SurgicalMask + train_ClothMask + train_N95
-# datasetTest = test_NoMask + test_SurgicalMask + test_ClothMask + test_N95
-
-# root = 'dataset'
-# # tuple of (path, label)
-# dirsTraining = [
-# 			(root + '/' + 'Train_NoMask',0), 
-# 			(root + '/' + 'Train_SurgicalMask', 1),
-# 			(root + '/' + 'Train_ClothMask', 2),
-# 			(root + '/' + 'Train_N95Mask', 3)
-# 		]
-# datasetTraining = MasksDataSet(dirsTraining, transform = transform)
-
-# # tuple of (path, label)
-# dirsTesting = [
-# 			(root + '/' + 'Test_NoMask',0), 
-# 			(root + '/' + 'Test_SurgicalMask', 1),
-# 			(root + '/' + 'Test_ClothMask', 2),
-# 			(root + '/' + 'Test_N95Mask', 3)
-# 		]
-# datasetTest = MasksDataSet( dirsTesting, transform = transform)
-#train_data, val_data = random_split(dataset, [1200, 400])
-
-def collate_fn(batch):
-   batch = list(filter(lambda x: x is not None, batch))
-   return torch.utils.data.dataloader.default_collate(batch) 
-
-# dataLoaderTrain = DataLoader(dataset=datasetTraining, batch_size =batch_size, shuffle=True, collate_fn=collate_fn)
-# dataLoaderTest = DataLoader(dataset=datasetTest, batch_size =batch_size, shuffle=True, collate_fn=collate_fn)
+datasetTest = MasksDataSet(testing, transform = transform) 
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -177,16 +202,16 @@ classes = ('no mask', 'surgical mask', 'cloth mask',  'n95')
 
 torch.manual_seed(0)
 net = NeuralNetClassifier(
-		CNN,
-		max_epochs=1,
-		iterator_train__num_workers=0,
-		iterator_valid__num_workers=0,
-		lr=1e-3,
-		batch_size= batch_size,#8,
-		optimizer=optim.Adam,
-		criterion=nn.CrossEntropyLoss,
-		device=DEVICE
-	)
+        CNN,
+        max_epochs=10,
+        iterator_train__num_workers=0,
+        iterator_valid__num_workers=0,
+        lr=1e-3,
+        batch_size= batch_size,#8,
+        optimizer=optim.Adam,
+        criterion=nn.CrossEntropyLoss,
+        device=DEVICE
+    )
 
 #print(datasetTraining[0])
 
@@ -207,3 +232,8 @@ print("F1_Score:    ", f1_score(y_true=y_test, y_pred=y_pred, average='weighted'
 torch.save(model.state_dict(), "model.pt")
 print("program done")
 plt.show()
+
+# train_sliceable = SliceDataset(datasetTraining)
+# scores = cross_val_score(net, train_sliceable, y_train, cv=10, scoring="accuracy")
+
+# print("Score: ", scores)
